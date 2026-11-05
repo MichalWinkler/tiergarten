@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -33,10 +34,17 @@ public class SupabaseManager : MonoBehaviour
     // Runtime state
     private float sessionStartTime;
     private int existingPlaytimeSeconds = 0;
+    private bool gameEnded = false;
+    private bool existingPlayerLoaded = false;
+    private int finalSessionSeconds = -1;
     private bool isSaving = false;
     private bool isLoadingLeaderboard = false;
     private string statusMessage = "Ready";
     private List<PlayerRecord> leaderboard = new List<PlayerRecord>();
+
+    public TextMeshProUGUI timerText;
+
+    private float elapsedTime = 0f;
 
     [Serializable]
     public class PlayerRecord
@@ -81,6 +89,12 @@ public class SupabaseManager : MonoBehaviour
 
     void Update()
     {
+        elapsedTime += Time.deltaTime;
+
+        int minutes = Mathf.FloorToInt(elapsedTime / 60);
+        int seconds = Mathf.FloorToInt(elapsedTime % 60);
+
+        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
         // Toggle debug UI with Tab key
         if (Input.GetKeyDown(KeyCode.Tab))
         {
@@ -102,7 +116,10 @@ public class SupabaseManager : MonoBehaviour
     /// </summary>
     public int GetTotalPlaytimeSeconds()
     {
-        int currentSessionSeconds = Mathf.RoundToInt(Time.time - sessionStartTime);
+        int currentSessionSeconds = finalSessionSeconds >= 0
+            ? finalSessionSeconds
+            : Mathf.RoundToInt(Time.time - sessionStartTime);
+
         return existingPlaytimeSeconds + currentSessionSeconds;
     }
 
@@ -153,6 +170,7 @@ public class SupabaseManager : MonoBehaviour
                 }
             }
         }
+        existingPlayerLoaded = true;
     }
 
     private IEnumerator SavePlayerDataRoutine(int petCount)
@@ -215,7 +233,7 @@ public class SupabaseManager : MonoBehaviour
 
         isLoadingLeaderboard = true;
         // Query top 10 sorted by pet_count descending
-        string url = $"{supabaseUrl.TrimEnd('/')}/rest/v1/players?select=player_name,pet_count,playtime_seconds,last_online_at&order=pet_count.desc&limit=10";
+        string url = $"{supabaseUrl.TrimEnd('/')}/rest/v1/players?select=player_name,pet_count,playtime_seconds,last_online_at&order=playtime_seconds.desc&limit=8";
 
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
@@ -307,7 +325,7 @@ public class SupabaseManager : MonoBehaviour
         GUILayout.EndHorizontal();
 
         GUILayout.Space(10);
-        GUILayout.Label("<b>🏆 Top Pet Owners (Remote Leaderboard):</b>");
+        GUILayout.Label("<b>Top Pet Owners by Playtime:</b>");
 
         if (leaderboard.Count == 0)
         {
@@ -327,5 +345,34 @@ public class SupabaseManager : MonoBehaviour
         GUILayout.Label("<size=9>Press <b>Tab</b> to toggle this overlay</size>");
 
         GUILayout.EndArea();
+    }
+
+    public void EndGame()
+    {
+        if (gameEnded)
+            return;
+
+        gameEnded = true;
+
+        // Zatrzymanie licznika
+        finalSessionSeconds = Mathf.RoundToInt(
+            Time.time - sessionStartTime
+        );
+
+        Debug.Log("Game ended! Time: " + finalSessionSeconds + " seconds");
+
+        StartCoroutine(SaveAfterLoadingPlayer());
+    }
+
+    private IEnumerator SaveAfterLoadingPlayer()
+    {
+        // Czekamy, aż pobierzemy poprzedni czas z Supabase
+        while (!existingPlayerLoaded)
+        {
+            yield return null;
+        }
+
+        // Zapisujemy wynik do bazy
+        SaveData();
     }
 }

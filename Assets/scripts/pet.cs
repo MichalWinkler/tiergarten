@@ -30,14 +30,14 @@ public class pet : MonoBehaviour
         //this.gameObject.transform.position += movement;
         hunger -= 1;
         thirst -= 1;    
-       if(hunger <= 150)
+       if(hunger <= 500)
          {
             carrot.SetActive(true);
             var heading = food.transform.position - this.gameObject.transform.position;
              var distance = heading.magnitude;
              if(distance < 2f)
              {
-                 hunger += 1000;
+                 hunger = 5000;
                  carrot.SetActive(false);
              }
              /*else
@@ -47,14 +47,14 @@ public class pet : MonoBehaviour
              }*/
          }
 
-        if (thirst <= 150)
+        if (thirst <= 500)
         {
             water_.SetActive(true);
             var heading = water.transform.position - this.gameObject.transform.position;
             var distance = heading.magnitude;
-            if (distance < 1.5f)
+            if (distance < 2f)
             {
-                thirst += 1500;
+                thirst = 7500;
                 water_.SetActive(false);
             }
             /*else
@@ -63,22 +63,22 @@ public class pet : MonoBehaviour
                 this.gameObject.transform.position += Vector3.Scale(movement, direction);
             }*/
         }
-        this.gameObject.transform.position += Vector3.Scale(movement, GetMoveInput());
+       // this.gameObject.transform.position += Vector3.Scale(movement, GetMoveInput());
     }
 
-    Vector3 GetMoveInput()
-    {
-        Vector3 input = Vector3.zero;
+    //Vector3 GetMoveInput()
+    //{
+    //    Vector3 input = Vector3.zero;
 
-        if (Keyboard.current != null)
-        {
-            if (Keyboard.current.wKey.isPressed) input.x -= 1f;
-            if (Keyboard.current.sKey.isPressed) input.x += 1f;
-            if (Keyboard.current.dKey.isPressed) input.z += 1f;
-            if (Keyboard.current.aKey.isPressed) input.z -= 1f;
-        }
+    //    if (Keyboard.current != null)
+    //    {
+    //        if (Keyboard.current.wKey.isPressed) input.z += 0.2f;
+    //        if (Keyboard.current.sKey.isPressed) input.z -= 0.2f;
+    //        if (Keyboard.current.dKey.isPressed) input.x += 0.2f;
+    //        if (Keyboard.current.aKey.isPressed) input.x -= 0.2f;
+    //    }
 
-        // Clamp the result to avoid values higher than 1f for diagonals
-        return Vector3.ClampMagnitude(input, 1f);
-    }
+    //    // Clamp the result to avoid values higher than 1f for diagonals
+    //    return Vector3.ClampMagnitude(input, 1f);
+    //}
 }
